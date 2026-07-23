@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * Design system derivado del brief de Stitch para el flujo de auth
+ * (ver design/stitch-login-brief.md). Solo se incluyen los tokens usados
+ * hasta ahora; se irán ampliando conforme se rediseñen signup/select-employee/pin-pad.
+ */
+@theme {
+  --color-background: #f9f9ff;
+  --color-surface: #f9f9ff;
+  --color-surface-bright: #f9f9ff;
+  --color-surface-variant: #dce2f3;
+  --color-surface-container-low: #f0f3ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #151c27;
+  --color-on-surface-variant: #59413a;
+
+  --color-primary: #a93101;
+  --color-primary-container: #cb491c;
+  --color-on-primary-container: #fffbff;
+  --color-on-primary-fixed-variant: #852400;
+  --color-surface-tint: #ad3404;
+
+  --color-secondary: #4f6073;
+  --color-tertiary: #5a5c5d;
+  --color-tertiary-fixed-dim: #c5c7c8;
+  --color-outline-variant: #e1bfb6;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+  --font-label: "Geist", system-ui, sans-serif;
+
+  --text-display: 48px;
+  --text-display--line-height: 56px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 800;
+
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 40px;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 700;
+
+  --text-headline-lg-mobile: 24px;
+  --text-headline-lg-mobile--line-height: 32px;
+  --text-headline-lg-mobile--font-weight: 700;
+
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 28px;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 26px;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+
+  --text-button: 18px;
+  --text-button--line-height: 24px;
+  --text-button--font-weight: 600;
+
+  --text-label-caps: 12px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 600;
+
+  --spacing-touch-target-min: 64px;
+  --spacing-stack-sm: 12px;
+  --spacing-stack-md: 20px;
+  --spacing-gutter: 24px;
+  --spacing-margin-page: 32px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200;
+  }
+}
