@@ -11,6 +11,7 @@ import { KdsPage } from './modules/kds/KdsPage'
 import { BackofficeLayout } from './modules/backoffice/BackofficeLayout'
 import { BackofficeHomePage } from './modules/backoffice/BackofficeHomePage'
 import { EmployeesListPage } from './modules/backoffice/employees/EmployeesListPage'
+import { Spinner } from './components/Spinner'
 
 function App() {
   const init = useAuthStore((s) => s.init)
@@ -22,7 +23,11 @@ function App() {
   }, [])
 
   if (initializing) {
-    return <div className="flex min-h-full items-center justify-center text-slate-400">Cargando...</div>
+    return (
+      <div className="flex min-h-full items-center justify-center text-slate-400">
+        <Spinner className="h-8 w-8" />
+      </div>
+    )
   }
 
   return (

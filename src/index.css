@@ -14,15 +14,21 @@
   --color-surface-container-lowest: #ffffff;
   --color-on-surface: #151c27;
   --color-on-surface-variant: #59413a;
+  --color-on-background: #151c27;
 
   --color-primary: #a93101;
   --color-primary-container: #cb491c;
   --color-on-primary-container: #fffbff;
   --color-on-primary-fixed-variant: #852400;
+  --color-primary-fixed-dim: #ffb59e;
   --color-surface-tint: #ad3404;
 
   --color-secondary: #4f6073;
+  --color-secondary-container: #cfe1f8;
+  --color-on-secondary-container: #536478;
   --color-tertiary: #5a5c5d;
+  --color-tertiary-fixed: #e1e3e4;
+  --color-on-tertiary-fixed: #191c1d;
   --color-tertiary-fixed-dim: #c5c7c8;
   --color-outline-variant: #e1bfb6;
 
@@ -88,5 +94,34 @@ body {
 @layer components {
   .input {
     @apply w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-200;
+  }
+}
+
+@keyframes blob-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(20px, -30px) scale(1.05);
+  }
+  66% {
+    transform: translate(-15px, 15px) scale(0.97);
+  }
+}
+
+.animate-blob {
+  animation: blob-float 14s ease-in-out infinite;
+}
+
+.animate-blob-delayed {
+  animation: blob-float 14s ease-in-out infinite;
+  animation-delay: -7s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob,
+  .animate-blob-delayed {
+    animation: none;
   }
 }

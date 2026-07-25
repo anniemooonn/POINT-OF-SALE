@@ -13,3 +13,10 @@ export const DEFAULT_ROUTE_BY_ROLE: Record<EmployeeRole, string> = {
   caja: '/foh',
   cocina: '/kds',
 }
+
+export const ROLE_AVATAR_CLASSES: Record<EmployeeRole, string> = {
+  admin: 'bg-primary-container text-on-primary-container',
+  mesero: 'bg-secondary-container text-on-secondary-container',
+  cocina: 'bg-tertiary-fixed text-on-tertiary-fixed',
+  caja: 'bg-primary-fixed-dim text-on-primary-fixed-variant',
+}
