@@ -8,8 +8,8 @@ export function AppHeader({ title }: { title: string }) {
   const clearActiveEmployee = useAuthStore((s) => s.clearActiveEmployee)
   const signOutLocation = useAuthStore((s) => s.signOutLocation)
 
-  function handleSwitchEmployee() {
-    clearActiveEmployee()
+  async function handleSwitchEmployee() {
+    await clearActiveEmployee()
     navigate('/select-employee', { replace: true })
   }
 

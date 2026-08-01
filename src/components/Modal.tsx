@@ -38,7 +38,7 @@ export function Modal({ open, onClose, children }: ModalProps) {
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            className="w-full max-w-sm"
+            className="max-h-full w-full max-w-sm overflow-y-auto"
           >
             {children}
           </motion.div>
