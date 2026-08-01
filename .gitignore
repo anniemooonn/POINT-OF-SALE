@@ -16,6 +16,12 @@ dist-ssr
 .env
 .env.local
 
+# Secretos: el access token de Supabase vive en ~/.claude/secrets/, fuera del
+# repo (ver .claude/skills/supabase-migrations/). Esto es solo una red de
+# seguridad por si alguna vez se copia aquí por error.
+*.token
+.claude/secrets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
