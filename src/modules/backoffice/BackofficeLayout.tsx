@@ -1,5 +1,9 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useLocation, useNavigate, useOutlet } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useAuthStore } from '../../stores/useAuthStore'
+import { EmployeeMenu } from '../../components/EmployeeMenu'
+import { layoutSpring, pageTransition } from '../../lib/motion'
 
 interface NavItem {
   to: string
@@ -23,17 +27,27 @@ function getActiveLabel(pathname: string): string {
   return match?.label ?? ''
 }
 
+/**
+ * Deja fija la pantalla que le tocó al montarse.
+ *
+ * `<Outlet>` siempre resuelve la ruta *actual*, así que la copia que se está
+ * desvaneciendo mostraría ya el contenido de la pantalla entrante. Al quedarnos
+ * con el elemento del primer render, la que sale sigue siendo la que salía.
+ * Cada ruta monta su propia instancia gracias al `key` del contenedor.
+ */
+function FrozenOutlet() {
+  const outlet = useOutlet()
+  const [frozen] = useState(outlet)
+  return frozen
+}
+
 export function BackofficeLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const clearActiveEmployee = useAuthStore((s) => s.clearActiveEmployee)
   const signOutLocation = useAuthStore((s) => s.signOutLocation)
 
-  function handleSwitchEmployee() {
-    clearActiveEmployee()
-    navigate('/select-employee', { replace: true })
-  }
-
+  // Cambiar de empleado ya no vive aquí: se hace desde el avatar de la barra
+  // superior (<EmployeeMenu />), junto al resto de acciones de sesión.
   async function handleCloseDevice() {
     await signOutLocation()
     navigate('/login', { replace: true })
@@ -56,22 +70,33 @@ export function BackofficeLayout() {
               to={item.to}
               end={item.to === '/backoffice'}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-4 py-3 text-button transition-colors duration-200 ${
+                `relative flex items-center gap-3 rounded-lg px-4 py-3 text-button transition-colors duration-200 ${
                   isActive
-                    ? 'bg-primary-container font-bold text-on-primary-container'
+                    ? 'font-bold text-on-primary-container'
                     : 'text-secondary hover:bg-surface-container-high'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
+                  {/* El fondo del ítem activo es un solo elemento compartido: al
+                      cambiar de sección se desliza hasta el nuevo destino en vez
+                      de encenderse y apagarse. */}
+                  {isActive && (
+                    <motion.span
+                      layoutId="backoffice-nav-active"
+                      transition={layoutSpring}
+                      className="absolute inset-0 rounded-lg bg-primary-container"
+                      aria-hidden="true"
+                    />
+                  )}
                   <span
-                    className="material-symbols-outlined"
+                    className="material-symbols-outlined relative"
                     style={{ fontVariationSettings: `'FILL' ${isActive ? 1 : 0}` }}
                   >
                     {item.icon}
                   </span>
-                  <span>{item.label}</span>
+                  <span className="relative">{item.label}</span>
                 </>
               )}
             </NavLink>
@@ -90,29 +115,43 @@ export function BackofficeLayout() {
       </nav>
 
       <header className="fixed top-0 right-0 z-10 flex h-touch-target-min w-[calc(100%-16rem)] items-center justify-between bg-surface-bright px-margin-page shadow-sm">
-        <div className="flex h-full items-center border-b-2 border-primary font-bold text-headline-md text-primary">
-          {getActiveLabel(location.pathname)}
+        <div className="flex h-full items-center overflow-hidden border-b-2 border-primary font-bold text-headline-md text-primary">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+            >
+              {getActiveLabel(location.pathname)}
+            </motion.span>
+          </AnimatePresence>
         </div>
         <div className="flex items-center gap-stack-md">
-          <button
-            onClick={handleSwitchEmployee}
-            className="flex items-center gap-2 text-button text-secondary transition-all hover:text-primary"
-          >
-            Cambiar Usuario
+          <button className="rounded-full p-2 text-secondary transition-all hover:bg-surface-container-high hover:text-primary">
+            <span className="material-symbols-outlined">notifications</span>
           </button>
-          <div className="flex items-center gap-2">
-            <button className="rounded-full p-2 text-secondary transition-all hover:bg-surface-container-high hover:text-primary">
-              <span className="material-symbols-outlined">notifications</span>
-            </button>
-            <button className="rounded-full p-2 text-secondary transition-all hover:bg-surface-container-high hover:text-primary">
-              <span className="material-symbols-outlined">account_circle</span>
-            </button>
-          </div>
+          {/* Sustituye al par "Cambiar Usuario" + icono de cuenta: las dos
+              acciones de sesión viven ahora dentro del propio avatar. */}
+          <EmployeeMenu />
         </div>
       </header>
 
       <main className="ml-64 mt-[64px] flex-1 bg-background p-margin-page">
-        <Outlet />
+        {/* mode="wait": la pantalla saliente termina antes de que entre la
+            siguiente, para que no se solapen dos contenidos distintos. */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            variants={pageTransition}
+            initial="hidden"
+            animate="show"
+            exit="exit"
+          >
+            <FrozenOutlet />
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   )

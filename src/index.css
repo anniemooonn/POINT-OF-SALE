@@ -42,6 +42,12 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
+  /* Verde de estado "en turno" / "cuadra" — no venía del brief de auth. */
+  --color-success: #146c43;
+  --color-on-success: #ffffff;
+  --color-success-container: #cdeedd;
+  --color-on-success-container: #00391f;
+
   --font-sans: "Hanken Grotesk", system-ui, sans-serif;
   --font-label: "Geist", system-ui, sans-serif;
 

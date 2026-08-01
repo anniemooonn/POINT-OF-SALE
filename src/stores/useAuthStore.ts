@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { closeOpenShift, openShift } from '../lib/shifts'
 import type { ActiveEmployee, EmployeeRole } from '../types/auth'
 
 const ACTIVE_EMPLOYEE_KEY = 'pos.activeEmployee'
@@ -27,8 +28,10 @@ interface AuthState {
   signInLocation: (email: string, password: string) => Promise<{ error: string | null }>
   signOutLocation: () => Promise<void>
   selectEmployee: (employeeId: string, pin: string) => Promise<{ error: string | null }>
-  clearActiveEmployee: () => void
+  clearActiveEmployee: () => Promise<void>
   requireManagerPin: (pin: string) => Promise<{ success: boolean; name?: string }>
+  /** Refleja el nombre editado en Configuración sin recargar la sesión. */
+  setLocationName: (name: string) => void
 }
 
 async function loadLocation(ownerAuthId: string): Promise<LocationRow | null> {
@@ -65,7 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     supabase.auth.onAuthStateChange(async (_event, newSession) => {
       const newLocation = newSession ? await loadLocation(newSession.user.id) : null
       set({ session: newSession, location: newLocation })
-      if (!newSession) get().clearActiveEmployee()
+      if (!newSession) void get().clearActiveEmployee()
     })
   },
 
@@ -109,6 +112,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     sessionStorage.setItem(ACTIVE_EMPLOYEE_KEY, JSON.stringify(activeEmployee))
 
     set({ session: data.session, location: locationRow, activeEmployee })
+    await openShift(locationRow.id, activeEmployee.id)
     return { error: null }
   },
 
@@ -123,8 +127,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOutLocation: async () => {
+    // Cerrar el turno va antes del signOut: las policies de employee_shifts
+    // dependen de auth.uid(), y sin sesión el update ya no pasaría.
+    await get().clearActiveEmployee()
     await supabase.auth.signOut()
-    get().clearActiveEmployee()
     set({ session: null, location: null })
   },
 
@@ -144,12 +150,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     sessionStorage.setItem(ACTIVE_EMPLOYEE_KEY, JSON.stringify(activeEmployee))
     set({ activeEmployee })
+
+    // Entrar con el PIN es marcar entrada: abre el turno si no tenía uno.
+    const locationId = get().location?.id
+    if (locationId) await openShift(locationId, activeEmployee.id)
+
     return { error: null }
   },
 
-  clearActiveEmployee: () => {
+  clearActiveEmployee: async () => {
+    const employee = get().activeEmployee
     sessionStorage.removeItem(ACTIVE_EMPLOYEE_KEY)
     set({ activeEmployee: null })
+    // Dejar el dispositivo (cambiar de usuario o apagarlo) marca la salida.
+    if (employee) await closeOpenShift(employee.id)
   },
 
   requireManagerPin: async (pin) => {
@@ -157,5 +171,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const result = data?.[0]
     if (error || !result?.success) return { success: false }
     return { success: true, name: result.name }
+  },
+
+  setLocationName: (name) => {
+    const location = get().location
+    if (location) set({ location: { ...location, name } })
   },
 }))

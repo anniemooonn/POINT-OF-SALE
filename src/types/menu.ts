@@ -1,12 +1,19 @@
-export const MENU_CATEGORIES = ['Entradas', 'Platos Fuertes', 'Bebidas', 'Postres'] as const
+/**
+ * Las categorías las define el dueño en Backoffice → Configuración
+ * (tabla `menu_categories`), por eso `category` es texto libre y no una unión
+ * fija. La lista viva está en `useSettingsStore`.
+ */
 
-export type MenuCategory = (typeof MENU_CATEGORIES)[number]
+/** Pseudo-categoría del filtro del menú: no existe en la base. */
+export const ALL_CATEGORIES = 'Todas'
 
 export interface Product {
   id: string
   name: string
-  category: MenuCategory
+  category: string
   price: number
+  cost: number | null
   photo_url: string | null
   active: boolean
+  in_stock: boolean
 }
