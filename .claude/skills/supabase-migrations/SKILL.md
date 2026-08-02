@@ -63,8 +63,12 @@ curl -s -o /dev/null -w "%{http_code}" \
 - Aplicar una migración escribe en la base de datos real del usuario.
   Confírmalo antes de correrlo, salvo que en ese mismo turno ya te lo hayan
   pedido explícitamente.
-- Aplica solo archivos de `supabase/migrations/`, en orden numérico. Si vas a
+- Aplica solo archivos de `supabase/migrations/`, en orden alfabético de nombre
+  (las históricas `0001`–`0008` primero, luego las de timestamp). Si vas a
   correr SQL que no está en un archivo del repo, enséñaselo antes al usuario.
+- Antes de aplicar un lote, corre
+  `node .claude/skills/nueva-migracion/new.mjs --check`: si dos archivos
+  comparten prefijo, el orden es ambiguo y hay que resolverlo primero.
 - Después de aplicar, verifica con `--tables` y di qué quedó creado.
 - Si el token da 401, no lo debuguees imprimiéndolo: dile al usuario que lo
   regenere y vuelva a guardarlo en la ruta de arriba.

@@ -12,6 +12,29 @@ aplican **a mano y en orden** sobre la base de datos del proyecto.
 | `0005_menu_photos_cost_and_stock.sql` | Bucket `product-photos`, columnas `cost` e `in_stock` |
 | `0006_employee_shifts.sql` | `employee_shifts` (entradas/salidas de turno) + RLS |
 | `0007_location_settings_and_categories.sql` | `location_settings`, `menu_categories`, datos fiscales en `locations`, `rename_menu_category`, `delete_menu_category` |
+| `0008_sections_and_tables.sql` | `sections`, `restaurant_tables`, `table_states` + RLS + `seed_table_state` |
+| `20260802020833_cash_sessions.sql` | `cash_sessions` (aperturas y cortes de caja) + RLS + `close_cash_session` |
+
+## Cómo se nombran
+
+Las nuevas migraciones llevan **timestamp UTC**, no número consecutivo:
+
+```text
+YYYYMMDDHHMMSS_descripcion_en_snake_case.sql
+```
+
+Dos ramas en paralelo no pueden elegir el mismo timestamp, mientras que sí
+eligen el mismo consecutivo: al mezclar dos ramas quedaron dos `0008`, y se
+resolvió renombrando la de caja, que era la que todavía no se había aplicado.
+Los archivos `0001`–`0008` ya aplicados se conservan tal cual y siguen
+ordenando primero (`0` < `2`).
+
+Créalas con el skill, que pone el nombre correcto y avisa de duplicados:
+
+```bash
+node .claude/skills/nueva-migracion/new.mjs "órdenes y comandas de mesa"
+node .claude/skills/nueva-migracion/new.mjs --check   # audita duplicados
+```
 
 El turno se abre solo cuando el empleado entra con su PIN y se cierra al
 cambiar de usuario o cerrar el dispositivo; el botón de Backoffice → Empleados
@@ -29,6 +52,14 @@ efectos que tiene sobre el menú:
 Renombrar una categoría pasa por `rename_menu_category` (mueve también sus
 productos, en la misma transacción) y borrarla por `delete_menu_category`, que
 la rechaza si todavía tiene productos.
+
+La de `cash_sessions` da de alta la pantalla de Cortes de Caja: guarda una
+fila por sesión de caja: fondo inicial al abrir y efectivo contado al cerrar.
+Un corte cerrado no se edita ni se borra (la tabla no tiene policy de update ni
+de delete); el cierre pasa por `close_cash_session`, que calcula el esperado
+—fondo inicial más ventas en efectivo— dentro de la misma transacción. La
+columna `cash_sales` existe ya pero se queda en 0 hasta que el módulo de cobro
+empiece a sumarle las ventas en efectivo del turno.
 
 ## Cómo aplicarlas
 
