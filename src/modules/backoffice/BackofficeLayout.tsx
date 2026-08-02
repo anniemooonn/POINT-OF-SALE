@@ -14,6 +14,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/backoffice', label: 'Resumen', icon: 'dashboard' },
   { to: '/backoffice/menu', label: 'Menú', icon: 'restaurant_menu' },
+  { to: '/backoffice/mesas', label: 'Mesas', icon: 'table_restaurant' },
   { to: '/backoffice/cortes-de-caja', label: 'Cortes de Caja', icon: 'point_of_sale' },
   { to: '/backoffice/propinas', label: 'Propinas', icon: 'payments' },
   { to: '/backoffice/empleados', label: 'Empleados', icon: 'group' },
