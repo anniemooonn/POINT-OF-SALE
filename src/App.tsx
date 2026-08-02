@@ -13,6 +13,7 @@ import { BackofficeLayout } from './modules/backoffice/BackofficeLayout'
 import { BackofficeHomePage } from './modules/backoffice/BackofficeHomePage'
 import { EmployeesListPage } from './modules/backoffice/employees/EmployeesListPage'
 import { MenuPage } from './modules/backoffice/menu/MenuPage'
+import { TableLayoutPage } from './modules/backoffice/tables/TableLayoutPage'
 import { CashRegisterPage } from './modules/backoffice/CashRegisterPage'
 import { TipsPage } from './modules/backoffice/TipsPage'
 import { SettingsPage } from './modules/backoffice/settings/SettingsPage'
@@ -62,6 +63,7 @@ function App() {
         <Route path="/backoffice" element={<BackofficeLayout />}>
           <Route index element={<BackofficeHomePage />} />
           <Route path="menu" element={<MenuPage />} />
+          <Route path="mesas" element={<TableLayoutPage />} />
           <Route path="cortes-de-caja" element={<CashRegisterPage />} />
           <Route path="propinas" element={<TipsPage />} />
           <Route path="empleados" element={<EmployeesListPage />} />
