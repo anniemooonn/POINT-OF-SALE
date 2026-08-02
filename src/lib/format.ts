@@ -39,6 +39,21 @@ export function formatMoney(value: number | null | undefined): string {
   return moneyFormatter.format(value)
 }
 
+/**
+ * Lee un importe capturado a mano (fondo de caja, efectivo recibido, propina).
+ * Devuelve `null` si no es un número válido: quien lo llama decide qué mensaje
+ * mostrar según el campo.
+ */
+export function parseAmount(raw: string): number | null {
+  const trimmed = raw.trim().replace(',', '.')
+  if (trimmed === '') return null
+  const value = Number(trimmed)
+  if (!Number.isFinite(value) || value < 0) return null
+  // Dos decimales: las columnas de dinero son numeric(12,2) y Postgres
+  // redondearía igual.
+  return Math.round(value * 100) / 100
+}
+
 /** Hora local del restaurante en formato 24h ("09:12"), como se lee un reloj de turnos. */
 export function formatTime(iso: string): string {
   try {
@@ -55,6 +70,18 @@ export function formatTime(iso: string): string {
       hour12: false,
     })
   }
+}
+
+/**
+ * Cuánto lleva algo esperando, en el formato corto con el que se lee de reojo
+ * una pantalla de cocina: "3 min", "45 min", "1 h 20". Sin segundos: nadie
+ * decide nada con esa precisión y el número parpadeando distrae.
+ */
+export function formatElapsed(iso: string, now: number = Date.now()): string {
+  const minutes = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000))
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  return `${hours} h ${String(minutes % 60).padStart(2, '0')}`
 }
 
 /**
