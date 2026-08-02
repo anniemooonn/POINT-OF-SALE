@@ -110,16 +110,16 @@ Se descartó el mapa fijo del plan original; el editor drag & drop entra al MVP.
 - [ ] **Gestión dinámica de mesas**: el restaurante crea, edita y elimina sus propias mesas (nombre/número, capacidad, forma) — no hay layout predefinido por el sistema.
 - [ ] **Drag & drop de mesas**: arrastrar mesas y soltarlas dentro del área delimitada de una sección. Validaciones: la mesa no puede quedar fuera de los límites dibujados ni encimarse con otra mesa.
 - [ ] **Mapa de mesas operativo (FOH)**: los meseros ven el layout tal como lo armó el admin, con estados en **ícono + texto** (libre, ocupada, en captura, esperando, servida, por pagar, sucia). En FOH el mapa es de solo lectura (no se mueven mesas durante el servicio).
-- [ ] **Apertura de mesa**: registrar hora de llegada y número de comensales
-- [ ] **Toma de orden**: selección de productos por categoría, cantidad, notas simples
-- [ ] **Envío de orden a cocina**: pantalla KDS con comandas entrantes ordenadas por hora
-- [ ] **Marcar platillo/orden como listo** desde KDS
-- [ ] **Marcar orden como servida** desde FOH
-- [ ] **Generar cuenta / ticket**: consolidar productos de la mesa, calcular total
-- [ ] **Cobro básico**: registrar método de pago (efectivo / tarjeta, sin pasarela integrada aún), cerrar ticket
-- [ ] **Liberar mesa** (pasar a limpia → libre)
+- [x] **Apertura de mesa**: registrar hora de llegada y número de comensales
+- [x] **Toma de orden**: selección de productos por categoría, cantidad, notas simples
+- [x] **Envío de orden a cocina**: pantalla KDS con comandas entrantes ordenadas por hora
+- [x] **Marcar platillo/orden como listo** desde KDS
+- [x] **Marcar orden como servida** desde FOH
+- [x] **Generar cuenta / ticket**: consolidar productos de la mesa, calcular total
+- [x] **Cobro básico**: registrar método de pago (efectivo / tarjeta, sin pasarela integrada aún), cerrar ticket
+- [x] **Liberar mesa** (pasar a limpia → libre)
 - [x] **Apertura y cierre de caja (turno)**: declarar fondo inicial, y al cierre captura de efectivo contado (corte ciego simplificado)
-- [ ] **Captura de propina** al cobrar (monto libre o % sugerido) — aunque la distribución automática se deje para Fase 2
+- [x] **Captura de propina** al cobrar (monto libre o % sugerido) — aunque la distribución automática se deje para Fase 2. La propina en efectivo se acumula aparte de la venta (`cash_sessions.cash_tips`) y cuenta en el esperado del corte.
 - [ ] **Permisos escalonados básicos**: ocultar reportes/finanzas a rol mesero/cocina
 
 ### 🟡 Prioridad Media — Fase 2 (Robustecer operación)
@@ -129,7 +129,7 @@ Se descartó el mapa fijo del plan original; el editor drag & drop entra al MVP.
 - [ ] **Registro de salidas de efectivo (petty cash)**: botón visible, categoría + monto, se descuenta del efectivo esperado
 - [ ] **División de cuenta**: por comensal o en partes iguales
 - [ ] **Unir mesas** (fusión temporal para grupos grandes)
-- [ ] **Buscador de productos** (barra de búsqueda predictiva, además de categorías)
+- [x] **Buscador de productos** (barra de búsqueda predictiva, además de categorías) — se adelantó a Fase 1: salió con la pantalla de toma de orden
 - [ ] **Timer de preparación en KDS**: alerta visual si un platillo excede tiempo configurado
 - [ ] **Dashboard básico para el dueño**: ventas del día, ticket promedio, comparativo por turno
 - [x] **Historial de cortes de caja** (auditoría: quién cerró, cuánto declaró, diferencias) — se adelantó a Fase 1: salió junto con la apertura/cierre de caja, en la misma pantalla
