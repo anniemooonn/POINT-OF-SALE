@@ -3,7 +3,7 @@ import { formatMoney } from '../../../lib/format'
 // En una sola línea a propósito: supabase-js infiere el tipo de la respuesta
 // leyendo esta cadena, y una concatenación le deja un `string` sin analizar.
 export const CASH_SESSION_COLUMNS =
-  'id, opened_by_name, opened_at, opening_float, cash_sales, closed_by_name, closed_at, expected_cash, counted_cash, difference, notes'
+  'id, opened_by_name, opened_at, opening_float, cash_sales, cash_tips, closed_by_name, closed_at, expected_cash, counted_cash, difference, notes'
 
 export const MISSING_TABLE_MSG =
   'La tabla de cortes de caja todavía no existe en Supabase. Corre la migración ' +
@@ -60,17 +60,4 @@ export function describeDifference(difference: number): DifferenceTone {
     chip: 'bg-surface-variant text-on-surface',
     icon: 'check',
   }
-}
-
-/**
- * Lee un importe capturado a mano. Devuelve `null` si no es un número válido:
- * el formulario decide qué mensaje mostrar según el campo.
- */
-export function parseAmount(raw: string): number | null {
-  const trimmed = raw.trim().replace(',', '.')
-  if (trimmed === '') return null
-  const value = Number(trimmed)
-  if (!Number.isFinite(value) || value < 0) return null
-  // Dos decimales: la columna es numeric(12,2) y Postgres redondearía igual.
-  return Math.round(value * 100) / 100
 }

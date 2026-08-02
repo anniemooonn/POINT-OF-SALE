@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { parseAmount } from './cash'
+import { parseAmount } from '../../../lib/format'
 import { MoneyField } from './MoneyField'
 
 interface OpenCashFormProps {

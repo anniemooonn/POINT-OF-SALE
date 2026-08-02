@@ -8,8 +8,13 @@ export interface CashSession {
   opened_at: string
   /** Efectivo declarado al abrir el turno. */
   opening_float: number
-  /** Efectivo cobrado durante el turno. Hoy siempre 0: lo llenará el cobro. */
+  /** Ventas cobradas en efectivo durante el turno (sin propina). */
   cash_sales: number
+  /**
+   * Propinas cobradas en efectivo. Van aparte de la venta pero cuentan en el
+   * esperado: hasta que se reparten, el dinero está físicamente en el cajón.
+   */
+  cash_tips: number
   closed_by_name: string | null
   closed_at: string | null
   /** Lo que debería haber en el cajón, congelado al momento de cerrar. */

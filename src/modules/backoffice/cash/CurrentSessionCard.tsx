@@ -43,6 +43,8 @@ export function CurrentSessionCard({ session, busy, onOpen, onClose }: CurrentSe
                 Abrió {session.opened_by_name} a las {formatTime(session.opened_at)}
                 <span className="mx-2 text-tertiary-fixed-dim">·</span>
                 Ventas en efectivo: {formatMoney(session.cash_sales)}
+                <span className="mx-2 text-tertiary-fixed-dim">·</span>
+                Propinas en efectivo: {formatMoney(session.cash_tips)}
               </p>
             </>
           ) : (

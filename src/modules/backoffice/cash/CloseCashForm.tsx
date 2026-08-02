@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { motion } from 'framer-motion'
-import { formatMoney } from '../../../lib/format'
+import { formatMoney, parseAmount } from '../../../lib/format'
 import type { ClosedCashSession } from '../../../types/cash'
-import { describeDifference, parseAmount } from './cash'
+import { describeDifference } from './cash'
 import { MoneyField } from './MoneyField'
 
 interface CloseCashFormProps {
