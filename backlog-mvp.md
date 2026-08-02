@@ -67,6 +67,30 @@ src/
   types/
 ```
 
+### Mapa de mesas dinámico — enfoque técnico (decisión 2026-08-01)
+
+Se descartó el mapa fijo del plan original; el editor drag & drop entra al MVP.
+
+- **Modelo de datos (Supabase):**
+  - `sections`: secciones del local (nombre, orden, referencia al local). Cada
+    sección guarda su **límite del espacio de trabajo** como polígono
+    (`boundary`, lista de puntos x,y en coordenadas normalizadas del lienzo),
+    dibujado por el administrador.
+  - `tables`: mesas del restaurante (nombre/número, capacidad, forma
+    rectangular/circular, sección a la que pertenecen, posición `x,y`,
+    dimensiones y rotación). Estado operativo de la mesa (libre, ocupada, etc.)
+    vive aparte del layout para que Realtime solo notifique cambios de estado.
+- **Editor (backoffice, solo admin):** lienzo SVG propio. Modo "dibujar límite"
+  (clic para colocar vértices de las líneas que delimitan el área) y modo
+  "mesas" (arrastrar desde una paleta y soltar dentro del límite, mover,
+  rotar, editar, eliminar). Validación punto-en-polígono para impedir soltar
+  mesas fuera del área, y chequeo de solapamiento entre mesas.
+- **Drag & drop:** posicionamiento libre en el lienzo con eventos de puntero
+  sobre SVG (no listas ordenables, por lo que dnd-kit/sortable no aplica).
+  Debe funcionar con touch (el admin puede editar desde tablet).
+- **FOH:** renderiza el mismo layout en solo lectura, coloreando cada mesa
+  según su estado en tiempo real.
+
 ### Dispositivos objetivo (según el análisis de hardware ya hecho)
 - FOH (meseros): responsive para tablet 8"–11", también usable en celular.
 - Caja: tablet 10"–12" o pantalla táctil, misma web app.
@@ -82,7 +106,10 @@ src/
 
 - [x] **Auth y roles básicos** (admin, mesero, cocina, caja) con login simple (PIN o usuario/contraseña)
 - [ ] **CRUD de menú**: categorías, productos, precio, foto opcional
-- [ ] **Mapa de mesas (versión fija)**: layout predefinido por el sistema (no drag&drop todavía), con estados en **ícono + texto** (libre, ocupada, en captura, esperando, servida, por pagar, sucia)
+- [ ] **Editor de layout del restaurante (admin, backoffice)**: el administrador crea y edita las **secciones** de la distribución del local (ej. salón, terraza, barra). Por cada sección puede **dibujar los límites del espacio de trabajo** (líneas que delimitan el área útil donde se pueden colocar mesas), reflejando la limitación física real del espacio.
+- [ ] **Gestión dinámica de mesas**: el restaurante crea, edita y elimina sus propias mesas (nombre/número, capacidad, forma) — no hay layout predefinido por el sistema.
+- [ ] **Drag & drop de mesas**: arrastrar mesas y soltarlas dentro del área delimitada de una sección. Validaciones: la mesa no puede quedar fuera de los límites dibujados ni encimarse con otra mesa.
+- [ ] **Mapa de mesas operativo (FOH)**: los meseros ven el layout tal como lo armó el admin, con estados en **ícono + texto** (libre, ocupada, en captura, esperando, servida, por pagar, sucia). En FOH el mapa es de solo lectura (no se mueven mesas durante el servicio).
 - [ ] **Apertura de mesa**: registrar hora de llegada y número de comensales
 - [ ] **Toma de orden**: selección de productos por categoría, cantidad, notas simples
 - [ ] **Envío de orden a cocina**: pantalla KDS con comandas entrantes ordenadas por hora
@@ -110,7 +137,7 @@ src/
 
 ### 🟢 Prioridad Baja — Fase 3 (Diferenciadores / escalamiento)
 
-- [ ] **Diseñador de mapa drag & drop**: dueño arma su propio croquis, zonas (terraza, barra, salón)
+- [ ] ~~**Diseñador de mapa drag & drop**~~ → **movido a Fase 1** (decisión 2026-08-01): el editor de layout con secciones, límites dibujables y drag & drop entra al MVP en lugar del mapa fijo.
 - [ ] **Autogestión del cliente vía QR**: web app pública, ver cuenta en vivo, llamar mesero, pedir cuenta
 - [ ] **Pago en línea del cliente vía QR** (con propina y pasarela de pago)
 - [ ] **Pasarela de pagos integrada** vs. enlace a terminal física (decisión pendiente de negocio)
