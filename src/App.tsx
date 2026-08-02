@@ -8,13 +8,14 @@ import { LocationLoginPage } from './modules/auth/LocationLoginPage'
 import { LocationSignupPage } from './modules/auth/LocationSignupPage'
 import { SelectEmployeePage } from './modules/auth/SelectEmployeePage'
 import { FohHomePage } from './modules/foh/FohHomePage'
+import { OrderPage } from './modules/foh/order/OrderPage'
 import { KdsPage } from './modules/kds/KdsPage'
 import { BackofficeLayout } from './modules/backoffice/BackofficeLayout'
 import { BackofficeHomePage } from './modules/backoffice/BackofficeHomePage'
 import { EmployeesListPage } from './modules/backoffice/employees/EmployeesListPage'
 import { MenuPage } from './modules/backoffice/menu/MenuPage'
 import { TableLayoutPage } from './modules/backoffice/tables/TableLayoutPage'
-import { CashRegisterPage } from './modules/backoffice/CashRegisterPage'
+import { CashRegisterPage } from './modules/backoffice/cash/CashRegisterPage'
 import { TipsPage } from './modules/backoffice/TipsPage'
 import { SettingsPage } from './modules/backoffice/settings/SettingsPage'
 import { Spinner } from './components/Spinner'
@@ -53,6 +54,7 @@ function App() {
 
       <Route element={<ProtectedRoute allowedRoles={['mesero', 'caja', 'admin']} />}>
         <Route path="/foh" element={<FohHomePage />} />
+        <Route path="/foh/mesa/:tableId" element={<OrderPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRoles={['cocina', 'admin']} />}>
