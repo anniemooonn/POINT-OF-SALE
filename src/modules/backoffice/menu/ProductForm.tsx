@@ -8,26 +8,40 @@ import { PhotoField } from './PhotoField'
 interface ProductFormProps {
   locationId: string
   product?: Product | null
+  /** Producto del que se parte al duplicar: precarga todo salvo el nombre tal cual. */
+  duplicateFrom?: Product | null
   defaultCategory: string
   onSaved: () => void
   onCancel: () => void
+  /** Se avisa tras guardar si la foto anterior dejó de usarse, para limpiarla del bucket. */
+  onPhotoReplaced?: (oldUrl: string) => void
 }
 
-export function ProductForm({ locationId, product, defaultCategory, onSaved, onCancel }: ProductFormProps) {
+export function ProductForm({
+  locationId,
+  product,
+  duplicateFrom,
+  defaultCategory,
+  onSaved,
+  onCancel,
+  onPhotoReplaced,
+}: ProductFormProps) {
   const isEditing = Boolean(product)
+  // Al duplicar se parte de los datos del original, pero se crea un producto nuevo.
+  const source = product ?? duplicateFrom ?? null
   const categories = useSettingsStore((s) => s.categories)
 
-  const [name, setName] = useState(product?.name ?? '')
-  const [category, setCategory] = useState(product?.category ?? defaultCategory)
+  const [name, setName] = useState(product?.name ?? (duplicateFrom ? `${duplicateFrom.name} (copia)` : ''))
+  const [category, setCategory] = useState(source?.category ?? defaultCategory)
 
   // Solo se ofrecen las categorías visibles, más la del producto que se está
   // editando aunque esté oculta: guardar no debe reasignarlo por su cuenta.
   const options = categories.filter((c) => c.active).map((c) => c.name)
   if (category && !options.includes(category)) options.unshift(category)
-  const [price, setPrice] = useState(product ? String(product.price) : '')
-  const [cost, setCost] = useState(product?.cost != null ? String(product.cost) : '')
-  const [inStock, setInStock] = useState(product?.in_stock ?? true)
-  const [photoUrl, setPhotoUrl] = useState(product?.photo_url ?? '')
+  const [price, setPrice] = useState(source ? String(source.price) : '')
+  const [cost, setCost] = useState(source?.cost != null ? String(source.cost) : '')
+  const [inStock, setInStock] = useState(source?.in_stock ?? true)
+  const [photoUrl, setPhotoUrl] = useState(source?.photo_url ?? '')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -70,6 +84,9 @@ export function ProductForm({ locationId, product, defaultCategory, onSaved, onC
       setError(error.message)
       return
     }
+    if (product?.photo_url && product.photo_url !== payload.photo_url) {
+      onPhotoReplaced?.(product.photo_url)
+    }
     onSaved()
   }
 
@@ -80,10 +97,14 @@ export function ProductForm({ locationId, product, defaultCategory, onSaved, onC
     >
       <div>
         <h2 className="text-headline-md text-on-surface">
-          {isEditing ? 'Editar producto' : 'Nuevo producto'}
+          {isEditing ? 'Editar producto' : duplicateFrom ? 'Duplicar producto' : 'Nuevo producto'}
         </h2>
         <p className="text-body-md text-secondary">
-          {isEditing ? 'Actualiza los datos del producto.' : 'Agrega un platillo o bebida al menú.'}
+          {isEditing
+            ? 'Actualiza los datos del producto.'
+            : duplicateFrom
+              ? `Copia de "${duplicateFrom.name}"; ajusta lo que cambie.`
+              : 'Agrega un platillo o bebida al menú.'}
         </p>
       </div>
 
