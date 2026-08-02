@@ -56,3 +56,44 @@ export function formatTime(iso: string): string {
     })
   }
 }
+
+/**
+ * Día calendario del restaurante como "2026-08-01". Se calcula con la zona
+ * horaria configurada y no con la del navegador: un corte de las 23:45 tiene
+ * que pertenecer al día del local, aunque la tablet esté en otro huso.
+ */
+function zonedDayKey(date: Date): string {
+  try {
+    // en-CA formatea la fecha en orden año-mes-día, que además ordena bien.
+    return date.toLocaleDateString('en-CA', { timeZone: active.timezone })
+  } catch {
+    return date.toLocaleDateString('en-CA')
+  }
+}
+
+/**
+ * Fecha con referencia al día para listados de historial: "Hoy, 14:30",
+ * "Ayer, 23:45" o "12 oct, 15:00" para cualquier fecha anterior.
+ */
+export function formatDayTime(iso: string): string {
+  const date = new Date(iso)
+  const time = formatTime(iso)
+
+  const day = zonedDayKey(date)
+  const now = new Date()
+  if (day === zonedDayKey(now)) return `Hoy, ${time}`
+
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  if (day === zonedDayKey(yesterday)) return `Ayer, ${time}`
+
+  try {
+    const label = date.toLocaleDateString(active.locale, {
+      day: 'numeric',
+      month: 'short',
+      timeZone: active.timezone,
+    })
+    return `${label}, ${time}`
+  } catch {
+    return `${date.toLocaleDateString(DEFAULT_SETTINGS.locale)}, ${time}`
+  }
+}

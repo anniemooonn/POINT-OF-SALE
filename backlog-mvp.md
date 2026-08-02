@@ -118,7 +118,7 @@ Se descartó el mapa fijo del plan original; el editor drag & drop entra al MVP.
 - [ ] **Generar cuenta / ticket**: consolidar productos de la mesa, calcular total
 - [ ] **Cobro básico**: registrar método de pago (efectivo / tarjeta, sin pasarela integrada aún), cerrar ticket
 - [ ] **Liberar mesa** (pasar a limpia → libre)
-- [ ] **Apertura y cierre de caja (turno)**: declarar fondo inicial, y al cierre captura de efectivo contado (corte ciego simplificado)
+- [x] **Apertura y cierre de caja (turno)**: declarar fondo inicial, y al cierre captura de efectivo contado (corte ciego simplificado)
 - [ ] **Captura de propina** al cobrar (monto libre o % sugerido) — aunque la distribución automática se deje para Fase 2
 - [ ] **Permisos escalonados básicos**: ocultar reportes/finanzas a rol mesero/cocina
 
@@ -132,7 +132,7 @@ Se descartó el mapa fijo del plan original; el editor drag & drop entra al MVP.
 - [ ] **Buscador de productos** (barra de búsqueda predictiva, además de categorías)
 - [ ] **Timer de preparación en KDS**: alerta visual si un platillo excede tiempo configurado
 - [ ] **Dashboard básico para el dueño**: ventas del día, ticket promedio, comparativo por turno
-- [ ] **Historial de cortes de caja** (auditoría: quién cerró, cuánto declaró, diferencias)
+- [x] **Historial de cortes de caja** (auditoría: quién cerró, cuánto declaró, diferencias) — se adelantó a Fase 1: salió junto con la apertura/cierre de caja, en la misma pantalla
 - [ ] **Formato único de reporte de corte** (mismo formato para todos los turnos)
 
 ### 🟢 Prioridad Baja — Fase 3 (Diferenciadores / escalamiento)
