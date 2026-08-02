@@ -6,12 +6,26 @@ import type { Product } from '../../../types/menu'
 
 interface ProductCardGridProps {
   products: Product[]
+  /** true cuando la cuadrícula muestra archivados: cambian las acciones. */
+  archivedView: boolean
   onUpdate: (id: string, patch: Partial<Product>) => void
   onEdit: (product: Product) => void
+  onDuplicate: (product: Product) => void
+  onArchive: (product: Product) => void
+  onRestore: (product: Product) => void
   onDelete: (product: Product) => void
 }
 
-export function ProductCardGrid({ products, onUpdate, onEdit, onDelete }: ProductCardGridProps) {
+export function ProductCardGrid({
+  products,
+  archivedView,
+  onUpdate,
+  onEdit,
+  onDuplicate,
+  onArchive,
+  onRestore,
+  onDelete,
+}: ProductCardGridProps) {
   return (
     <motion.div
       className="grid grid-cols-1 gap-gutter md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
@@ -60,22 +74,53 @@ export function ProductCardGrid({ products, onUpdate, onEdit, onDelete }: Produc
               </AnimatePresence>
 
               <div className="absolute top-2 right-2 flex gap-1">
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => onEdit(product)}
-                  aria-label={`Editar ${product.name}`}
-                  className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-primary"
-                >
-                  <span className="material-symbols-outlined text-lg">edit</span>
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => onDelete(product)}
-                  aria-label={`Eliminar ${product.name}`}
-                  className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-error"
-                >
-                  <span className="material-symbols-outlined text-lg">delete</span>
-                </motion.button>
+                {archivedView ? (
+                  <>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => onRestore(product)}
+                      aria-label={`Restaurar ${product.name}`}
+                      className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-primary"
+                    >
+                      <span className="material-symbols-outlined text-lg">unarchive</span>
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => onDelete(product)}
+                      aria-label={`Eliminar definitivamente ${product.name}`}
+                      className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-error"
+                    >
+                      <span className="material-symbols-outlined text-lg">delete_forever</span>
+                    </motion.button>
+                  </>
+                ) : (
+                  <>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => onEdit(product)}
+                      aria-label={`Editar ${product.name}`}
+                      className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-primary"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => onDuplicate(product)}
+                      aria-label={`Duplicar ${product.name}`}
+                      className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-primary"
+                    >
+                      <span className="material-symbols-outlined text-lg">content_copy</span>
+                    </motion.button>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => onArchive(product)}
+                      aria-label={`Archivar ${product.name}`}
+                      className="rounded-full bg-surface-container-lowest/90 p-1.5 text-secondary shadow-sm transition-colors hover:bg-surface-container-lowest hover:text-error"
+                    >
+                      <span className="material-symbols-outlined text-lg">archive</span>
+                    </motion.button>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex flex-1 flex-col p-4">

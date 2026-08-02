@@ -11,6 +11,8 @@ interface MenuToolbarProps {
   onToggleOnlyInactive: () => void
   onlyOutOfStock: boolean
   onToggleOnlyOutOfStock: () => void
+  showArchived: boolean
+  onToggleArchived: () => void
   view: MenuView
   onViewChange: (view: MenuView) => void
 }
@@ -49,6 +51,8 @@ export function MenuToolbar({
   onToggleOnlyInactive,
   onlyOutOfStock,
   onToggleOnlyOutOfStock,
+  showArchived,
+  onToggleArchived,
   view,
   onViewChange,
 }: MenuToolbarProps) {
@@ -95,6 +99,9 @@ export function MenuToolbar({
         </FilterChip>
         <FilterChip active={onlyOutOfStock} onClick={onToggleOnlyOutOfStock}>
           Solo agotados
+        </FilterChip>
+        <FilterChip active={showArchived} onClick={onToggleArchived}>
+          Archivados
         </FilterChip>
       </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabase'
+import { removeProductPhotoIfUnused } from '../../../lib/productPhotos'
 import { fadeUp, layoutSpring, viewSwap } from '../../../lib/motion'
 import { useAuthStore } from '../../../stores/useAuthStore'
 import { useSettingsStore } from '../../../stores/useSettingsStore'
@@ -22,6 +23,7 @@ function normalize(text: string) {
 export function MenuPage() {
   const location = useAuthStore((s) => s.location)
   const categories = useSettingsStore((s) => s.categories)
+  const settings = useSettingsStore((s) => s.settings)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -30,12 +32,14 @@ export function MenuPage() {
   const [search, setSearch] = useState('')
   const [onlyInactive, setOnlyInactive] = useState(false)
   const [onlyOutOfStock, setOnlyOutOfStock] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
   const [view, setView] = useState<MenuView>(() =>
     localStorage.getItem(VIEW_STORAGE_KEY) === 'table' ? 'table' : 'cards',
   )
 
   const [formOpen, setFormOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [duplicateSource, setDuplicateSource] = useState<Product | null>(null)
 
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
@@ -46,7 +50,7 @@ export function MenuPage() {
     setLoading(true)
     const { data } = await supabase
       .from('products')
-      .select('id, name, category, price, cost, photo_url, active, in_stock')
+      .select('id, name, category, price, cost, photo_url, active, in_stock, archived_at')
       .eq('location_id', location.id)
       .order('name')
     setProducts(data ?? [])
@@ -83,12 +87,29 @@ export function MenuPage() {
 
   function openCreate() {
     setEditingProduct(null)
+    setDuplicateSource(null)
     setFormOpen(true)
   }
 
   function openEdit(product: Product) {
     setEditingProduct(product)
+    setDuplicateSource(null)
     setFormOpen(true)
+  }
+
+  function openDuplicate(product: Product) {
+    setEditingProduct(null)
+    setDuplicateSource(product)
+    setFormOpen(true)
+  }
+
+  /** Archivar es el camino normal de "quitar del menú": reversible y no rompe historial. */
+  function archiveProduct(product: Product) {
+    void updateProduct(product.id, { archived_at: new Date().toISOString() })
+  }
+
+  function restoreProduct(product: Product) {
+    void updateProduct(product.id, { archived_at: null })
   }
 
   function openDelete(product: Product) {
@@ -99,9 +120,16 @@ export function MenuPage() {
   async function confirmDelete() {
     if (!deletingProduct) return
     setDeleting(true)
-    await supabase.from('products').delete().eq('id', deletingProduct.id)
+    const { error } = await supabase.from('products').delete().eq('id', deletingProduct.id)
     setDeleting(false)
     setDeleteOpen(false)
+    if (error) {
+      // Cuando existan órdenes que referencien el producto, el FK va a
+      // rechazar este delete: el mensaje debe verse, no perderse en silencio.
+      setErrorMsg(`No se pudo eliminar "${deletingProduct.name}": ${error.message}`)
+      return
+    }
+    await removeProductPhotoIfUnused(deletingProduct.photo_url, products, deletingProduct.id)
     reload()
   }
 
@@ -110,6 +138,7 @@ export function MenuPage() {
     setSearch('')
     setOnlyInactive(false)
     setOnlyOutOfStock(false)
+    setShowArchived(false)
   }
 
   // Las categorías configuradas, más cualquiera que algún producto siga usando
@@ -123,6 +152,8 @@ export function MenuPage() {
 
   const query = normalize(search.trim())
   const visibleProducts = products.filter((p) => {
+    // La vista normal y la de archivados son mundos separados.
+    if (Boolean(p.archived_at) !== showArchived) return false
     if (activeCategory !== ALL_CATEGORIES && p.category !== activeCategory) return false
     if (query && !normalize(p.name).includes(query)) return false
     if (onlyInactive && p.active) return false
@@ -131,14 +162,22 @@ export function MenuPage() {
   })
 
   const filtersApplied =
-    activeCategory !== ALL_CATEGORIES || query !== '' || onlyInactive || onlyOutOfStock
+    activeCategory !== ALL_CATEGORIES ||
+    query !== '' ||
+    onlyInactive ||
+    onlyOutOfStock ||
+    showArchived
 
   return (
     <div>
       <div className="mb-gutter flex items-end justify-between">
         <div>
           <h2 className="text-headline-lg text-on-surface">Gestión de Menú</h2>
-          <p className="mt-1 text-secondary">Administra los productos disponibles para la venta.</p>
+          <p className="mt-1 text-secondary">
+            Administra los productos disponibles para la venta. Los precios{' '}
+            {settings.prices_include_tax ? 'incluyen' : 'no incluyen'} impuesto (
+            {settings.tax_rate}%).
+          </p>
         </div>
         <motion.button
           onClick={openCreate}
@@ -159,6 +198,8 @@ export function MenuPage() {
         onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
         onlyOutOfStock={onlyOutOfStock}
         onToggleOnlyOutOfStock={() => setOnlyOutOfStock((v) => !v)}
+        showArchived={showArchived}
+        onToggleArchived={() => setShowArchived((v) => !v)}
         view={view}
         onViewChange={changeView}
       />
@@ -213,9 +254,11 @@ export function MenuPage() {
           className="rounded-xl border border-dashed border-surface-variant px-6 py-12 text-center"
         >
           <p className="text-secondary">
-            {products.length === 0
-              ? 'Aún no hay productos en el menú.'
-              : 'Ningún producto coincide con la búsqueda o los filtros.'}
+            {showArchived && products.every((p) => !p.archived_at)
+              ? 'No hay productos archivados.'
+              : products.length === 0
+                ? 'Aún no hay productos en el menú.'
+                : 'Ningún producto coincide con la búsqueda o los filtros.'}
           </p>
           {filtersApplied && products.length > 0 && (
             <button
@@ -247,15 +290,24 @@ export function MenuPage() {
               {view === 'cards' ? (
                 <ProductCardGrid
                   products={visibleProducts}
+                  archivedView={showArchived}
                   onUpdate={updateProduct}
                   onEdit={openEdit}
+                  onDuplicate={openDuplicate}
+                  onArchive={archiveProduct}
+                  onRestore={restoreProduct}
                   onDelete={openDelete}
                 />
               ) : (
                 <ProductTable
                   products={visibleProducts}
+                  categoryOptions={categories.filter((c) => c.active).map((c) => c.name)}
+                  archivedView={showArchived}
                   onUpdate={updateProduct}
                   onEdit={openEdit}
+                  onDuplicate={openDuplicate}
+                  onArchive={archiveProduct}
+                  onRestore={restoreProduct}
                   onDelete={openDelete}
                 />
               )}
@@ -269,6 +321,7 @@ export function MenuPage() {
           <ProductForm
             locationId={location.id}
             product={editingProduct}
+            duplicateFrom={duplicateSource}
             defaultCategory={
               activeCategory === ALL_CATEGORIES
                 ? (categories.find((c) => c.active)?.name ?? '')
@@ -279,6 +332,11 @@ export function MenuPage() {
               setFormOpen(false)
               reload()
             }}
+            onPhotoReplaced={(oldUrl) => {
+              // La foto reemplazada se limpia del bucket salvo que otro
+              // producto (un duplicado) la siga usando.
+              void removeProductPhotoIfUnused(oldUrl, products, editingProduct?.id)
+            }}
           />
         )}
       </Modal>
@@ -286,8 +344,8 @@ export function MenuPage() {
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)}>
         {deletingProduct && (
           <ConfirmDialog
-            title="Eliminar producto"
-            message={`¿Seguro que quieres eliminar "${deletingProduct.name}"? Esta acción no se puede deshacer.`}
+            title="Eliminar definitivamente"
+            message={`"${deletingProduct.name}" se borrará para siempre, junto con su foto. Si podría volver al menú, déjalo archivado.`}
             loading={deleting}
             onCancel={() => setDeleteOpen(false)}
             onConfirm={confirmDelete}

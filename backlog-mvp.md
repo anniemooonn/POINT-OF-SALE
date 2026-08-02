@@ -105,7 +105,7 @@ Se descartó el mapa fijo del plan original; el editor drag & drop entra al MVP.
 ### 🔴 Prioridad Alta — Fase 1 (MVP funcional)
 
 - [x] **Auth y roles básicos** (admin, mesero, cocina, caja) con login simple (PIN o usuario/contraseña)
-- [ ] **CRUD de menú**: categorías, productos, precio, foto opcional
+- [x] **CRUD de menú**: categorías, productos, precio, foto opcional — incluye además costo/margen, archivado (soft delete), duplicar y foto por subida o enlace
 - [ ] **Editor de layout del restaurante (admin, backoffice)**: el administrador crea y edita las **secciones** de la distribución del local (ej. salón, terraza, barra). Por cada sección puede **dibujar los límites del espacio de trabajo** (líneas que delimitan el área útil donde se pueden colocar mesas), reflejando la limitación física real del espacio.
 - [ ] **Gestión dinámica de mesas**: el restaurante crea, edita y elimina sus propias mesas (nombre/número, capacidad, forma) — no hay layout predefinido por el sistema.
 - [ ] **Drag & drop de mesas**: arrastrar mesas y soltarlas dentro del área delimitada de una sección. Validaciones: la mesa no puede quedar fuera de los límites dibujados ni encimarse con otra mesa.

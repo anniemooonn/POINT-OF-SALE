@@ -16,4 +16,6 @@ export interface Product {
   photo_url: string | null
   active: boolean
   in_stock: boolean
+  /** Con fecha = fuera del menú pero conservado para el historial de ventas. */
+  archived_at: string | null
 }

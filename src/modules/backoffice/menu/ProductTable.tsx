@@ -7,8 +7,15 @@ import { EditableCell } from './EditableCell'
 
 interface ProductTableProps {
   products: Product[]
+  /** Categorías visibles para el select inline de la columna Categoría. */
+  categoryOptions: string[]
+  /** true cuando la tabla muestra archivados: cambian las acciones por fila. */
+  archivedView: boolean
   onUpdate: (id: string, patch: Partial<Product>) => void
   onEdit: (product: Product) => void
+  onDuplicate: (product: Product) => void
+  onArchive: (product: Product) => void
+  onRestore: (product: Product) => void
   onDelete: (product: Product) => void
 }
 
@@ -19,10 +26,20 @@ function parseAmount(raw: string): number | undefined {
   return value
 }
 
-export function ProductTable({ products, onUpdate, onEdit, onDelete }: ProductTableProps) {
+export function ProductTable({
+  products,
+  categoryOptions,
+  archivedView,
+  onUpdate,
+  onEdit,
+  onDuplicate,
+  onArchive,
+  onRestore,
+  onDelete,
+}: ProductTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-surface-variant bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.04)]">
-      <table className="w-full min-w-[900px] border-collapse text-left">
+      <table className="w-full min-w-[1000px] border-collapse text-left">
         <thead>
           <tr className="border-b border-surface-variant bg-surface-container-high">
             <th scope="col" className="w-16 px-4 py-3">
@@ -39,6 +56,9 @@ export function ProductTable({ products, onUpdate, onEdit, onDelete }: ProductTa
             </th>
             <th scope="col" className="w-32 px-4 py-3 text-right font-label text-label-caps text-secondary uppercase">
               Costo
+            </th>
+            <th scope="col" className="w-32 px-4 py-3 text-right font-label text-label-caps text-secondary uppercase">
+              Margen
             </th>
             <th scope="col" className="w-56 px-4 py-3 font-label text-label-caps text-secondary uppercase">
               Estado
@@ -88,7 +108,25 @@ export function ProductTable({ products, onUpdate, onEdit, onDelete }: ProductTa
                   />
                 </td>
 
-                <td className="px-4 py-2 text-body-md text-secondary">{product.category}</td>
+                <td className="px-4 py-2">
+                  <select
+                    value={product.category}
+                    onChange={(e) => onUpdate(product.id, { category: e.target.value })}
+                    aria-label={`Categoría de ${product.name}`}
+                    className="w-full cursor-pointer rounded-md border border-transparent bg-transparent px-1 py-1.5 text-body-md text-secondary transition-colors hover:border-surface-variant hover:bg-surface-container-low"
+                  >
+                    {/* La del producto siempre está en la lista, aunque esté oculta:
+                        abrir el select no debe reasignarla sola. */}
+                    {(categoryOptions.includes(product.category)
+                      ? categoryOptions
+                      : [product.category, ...categoryOptions]
+                    ).map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </td>
 
                 <td className="px-2 py-2">
                   <EditableCell
@@ -125,6 +163,23 @@ export function ProductTable({ products, onUpdate, onEdit, onDelete }: ProductTa
                   />
                 </td>
 
+                <td className="px-4 py-2 text-right">
+                  {product.cost === null ? (
+                    <span className="text-body-md text-secondary">—</span>
+                  ) : (
+                    <>
+                      <p className="text-body-md text-on-surface">
+                        {formatMoney(product.price - product.cost)}
+                      </p>
+                      <p className="font-label text-label-caps text-secondary">
+                        {product.price > 0
+                          ? `${Math.round(((product.price - product.cost) / product.price) * 100)}%`
+                          : '—'}
+                      </p>
+                    </>
+                  )}
+                </td>
+
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-3">
                     <ToggleSwitch
@@ -149,24 +204,58 @@ export function ProductTable({ products, onUpdate, onEdit, onDelete }: ProductTa
 
                 <td className="px-4 py-2">
                   <div className="flex justify-end gap-1">
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => onEdit(product)}
-                      aria-label={`Editar ${product.name}`}
-                      className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
-                    >
-                      <span className="material-symbols-outlined text-lg">edit</span>
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => onDelete(product)}
-                      aria-label={`Eliminar ${product.name}`}
-                      className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-error"
-                    >
-                      <span className="material-symbols-outlined text-lg">delete</span>
-                    </motion.button>
+                    {archivedView ? (
+                      <>
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => onRestore(product)}
+                          aria-label={`Restaurar ${product.name}`}
+                          className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                        >
+                          <span className="material-symbols-outlined text-lg">unarchive</span>
+                        </motion.button>
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => onDelete(product)}
+                          aria-label={`Eliminar definitivamente ${product.name}`}
+                          className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-error"
+                        >
+                          <span className="material-symbols-outlined text-lg">delete_forever</span>
+                        </motion.button>
+                      </>
+                    ) : (
+                      <>
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => onEdit(product)}
+                          aria-label={`Editar ${product.name}`}
+                          className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                        >
+                          <span className="material-symbols-outlined text-lg">edit</span>
+                        </motion.button>
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => onDuplicate(product)}
+                          aria-label={`Duplicar ${product.name}`}
+                          className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                        >
+                          <span className="material-symbols-outlined text-lg">content_copy</span>
+                        </motion.button>
+                        <motion.button
+                          type="button"
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => onArchive(product)}
+                          aria-label={`Archivar ${product.name}`}
+                          className="rounded-full p-1.5 text-secondary transition-colors hover:bg-surface-container-high hover:text-error"
+                        >
+                          <span className="material-symbols-outlined text-lg">archive</span>
+                        </motion.button>
+                      </>
+                    )}
                   </div>
                 </td>
               </motion.tr>
