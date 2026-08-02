@@ -1,35 +1,66 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppHeader } from '../../components/AppHeader'
 import { Modal } from '../../components/Modal'
 import { Spinner } from '../../components/Spinner'
 import { TableShapeSvg } from '../../components/TableShapeSvg'
+import { formatElapsed, formatMoney } from '../../lib/format'
+import { useNow } from '../../lib/useNow'
 import { useAuthStore } from '../../stores/useAuthStore'
+import { useOrdersStore } from '../../stores/useOrdersStore'
 import { useTablesStore } from '../../stores/useTablesStore'
 import { CANVAS_H, CANVAS_W } from '../../lib/geometry'
 import { STATUS_META, TABLE_STATUSES } from '../../types/tables'
 import type { TableStatus } from '../../types/tables'
+import { orderSubtotal } from '../../types/orders'
+import { OpenTableDialog } from './order/OpenTableDialog'
+
+type Dialog = 'acciones' | 'abrir' | 'estado' | null
 
 /**
  * Mapa de mesas operativo (FOH). Solo lectura sobre el layout que armó el
- * administrador en el backoffice: aquí las mesas no se mueven, se les cambia
- * el estado. Los cambios llegan de otros dispositivos por Realtime.
+ * administrador en el backoffice: aquí las mesas no se mueven, se abren, se
+ * atienden y se cobran. Los cambios llegan de otros dispositivos por Realtime.
+ *
+ * Tocar una mesa con cuenta abierta lleva directo a su comanda, que es el
+ * camino que un mesero recorre decenas de veces por turno. El cambio de estado
+ * a mano sigue existiendo detrás del interruptor "Estados", para las
+ * excepciones que el flujo no cubre.
  */
 export function FohHomePage() {
+  const navigate = useNavigate()
   const locationId = useAuthStore((s) => s.location?.id)
+  const employee = useAuthStore((s) => s.activeEmployee)
+
   const { sections, tables, states, loading, missingMigration, load, subscribeStates, setTableStatus } =
     useTablesStore()
+  const {
+    byTable,
+    load: loadOrders,
+    subscribe: subscribeOrders,
+    openTable,
+  } = useOrdersStore()
 
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null)
-  const [statusTableId, setStatusTableId] = useState<string | null>(null)
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null)
+  const [dialog, setDialog] = useState<Dialog>(null)
+  const [statusMode, setStatusMode] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const now = useNow()
 
   useEffect(() => {
     if (!locationId) return
     // load() fija locationId en el store de forma síncrona antes de su primer
     // await, así que la suscripción puede crearse inmediatamente después.
     void load(locationId)
-    const unsubscribe = subscribeStates()
-    return unsubscribe
+    void loadOrders(locationId)
+    const unsubscribeStates = subscribeStates()
+    const unsubscribeOrders = subscribeOrders()
+    return () => {
+      unsubscribeStates()
+      unsubscribeOrders()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locationId])
 
@@ -39,7 +70,8 @@ export function FohHomePage() {
     () => (activeSectionKey ? tables.filter((t) => t.section_id === activeSectionKey) : []),
     [activeSectionKey, tables],
   )
-  const statusTable = tables.find((t) => t.id === statusTableId) ?? null
+  const selectedTable = tables.find((t) => t.id === selectedTableId) ?? null
+  const selectedOrder = selectedTableId ? (byTable[selectedTableId] ?? null) : null
 
   const statusCounts = useMemo(() => {
     const counts = {} as Record<TableStatus, number>
@@ -48,11 +80,39 @@ export function FohHomePage() {
     return counts
   }, [sectionTables, states])
 
+  function handleTableTap(tableId: string) {
+    setError(null)
+    setSelectedTableId(tableId)
+
+    if (statusMode) {
+      setDialog('estado')
+      return
+    }
+    // Mesa con cuenta abierta: el camino corto es su comanda.
+    if (byTable[tableId]) {
+      navigate(`/foh/mesa/${tableId}`)
+      return
+    }
+    setDialog('acciones')
+  }
+
   async function handleSetStatus(status: TableStatus) {
-    if (!statusTable) return
-    setStatusTableId(null)
-    const result = await setTableStatus(statusTable.id, status)
+    if (!selectedTable) return
+    setDialog(null)
+    const result = await setTableStatus(selectedTable.id, status)
     if (result.error) setError(result.error)
+  }
+
+  /** Devuelve el mensaje de error, o `null` si la mesa quedó abierta. */
+  async function handleOpenTable(guests: number): Promise<string | null> {
+    if (!selectedTable || !employee) return 'No hay un empleado activo.'
+
+    const result = await openTable(selectedTable.id, guests, employee.id)
+    if (result.error) return result.error
+
+    setDialog(null)
+    navigate(`/foh/mesa/${selectedTable.id}`)
+    return null
   }
 
   return (
@@ -75,27 +135,48 @@ export function FohHomePage() {
           </div>
         ) : (
           <>
-            {/* Secciones */}
-            {sections.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {sections.map((section) => {
-                  const active = activeSection?.id === section.id
-                  return (
-                    <button
-                      key={section.id}
-                      type="button"
-                      onClick={() => setActiveSectionId(section.id)}
-                      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-                        active
-                          ? 'bg-primary-container text-on-primary-container'
-                          : 'border border-slate-300 text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      {section.name}
-                    </button>
-                  )
-                })}
+            {/* Secciones y modo de toque */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 gap-2 overflow-x-auto pb-1">
+                {sections.length > 1 &&
+                  sections.map((section) => {
+                    const active = activeSection?.id === section.id
+                    return (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => setActiveSectionId(section.id)}
+                        className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                          active
+                            ? 'bg-primary-container text-on-primary-container'
+                            : 'border border-slate-300 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {section.name}
+                      </button>
+                    )
+                  })}
               </div>
+
+              <button
+                type="button"
+                onClick={() => setStatusMode((on) => !on)}
+                aria-pressed={statusMode}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  statusMode
+                    ? 'bg-slate-900 text-white'
+                    : 'border border-slate-300 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[18px]">tune</span>
+                Estados
+              </button>
+            </div>
+
+            {statusMode && (
+              <p className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white">
+                Modo estados: tocar una mesa cambia su estado a mano, sin abrir la comanda.
+              </p>
             )}
 
             {error && (
@@ -122,6 +203,7 @@ export function FohHomePage() {
                 {sectionTables.map((table) => {
                   const status = states[table.id] ?? 'libre'
                   const meta = STATUS_META[status]
+                  const order = byTable[table.id] ?? null
                   return (
                     <TableShapeSvg
                       key={table.id}
@@ -136,7 +218,7 @@ export function FohHomePage() {
                       fill={meta.fill}
                       stroke={meta.stroke}
                       cursor="pointer"
-                      onClick={() => setStatusTableId(table.id)}
+                      onClick={() => handleTableTap(table.id)}
                     >
                       <span
                         className="material-symbols-outlined"
@@ -147,9 +229,19 @@ export function FohHomePage() {
                       <span className="text-[13px] font-bold" style={{ color: meta.text }}>
                         {table.name}
                       </span>
-                      <span className="text-[11px] font-medium" style={{ color: meta.text }}>
-                        {meta.label}
-                      </span>
+                      {order ? (
+                        <span
+                          className="text-[11px] font-semibold tabular-nums"
+                          style={{ color: meta.text }}
+                        >
+                          {formatMoney(orderSubtotal(order.items))} ·{' '}
+                          {formatElapsed(order.opened_at, now)}
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-medium" style={{ color: meta.text }}>
+                          {meta.label}
+                        </span>
+                      )}
                     </TableShapeSvg>
                   )
                 })}
@@ -195,21 +287,68 @@ export function FohHomePage() {
         )}
       </div>
 
-      {/* Cambio de estado manual: puente operativo hasta que la toma de orden
-          y el cobro muevan los estados solos. */}
-      <Modal open={statusTable !== null} onClose={() => setStatusTableId(null)}>
-        {statusTable && (
+      <Modal open={dialog !== null} onClose={() => setDialog(null)}>
+        {dialog === 'acciones' && selectedTable && (
           <div className="w-full space-y-4 rounded-2xl border border-surface-variant bg-surface-container-lowest p-6 shadow-[0px_12px_32px_rgba(0,0,0,0.08)]">
             <div>
-              <h2 className="text-headline-md text-on-surface">{statusTable.name}</h2>
+              <h2 className="text-headline-md text-on-surface">{selectedTable.name}</h2>
+              <p className="text-body-md text-secondary">
+                {STATUS_META[states[selectedTable.id] ?? 'libre'].label} ·{' '}
+                {selectedTable.capacity} lugares
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setDialog('abrir')}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-button text-on-primary shadow-sm transition-transform active:scale-95"
+            >
+              <span className="material-symbols-outlined">group_add</span>
+              Abrir mesa
+            </button>
+
+            {(states[selectedTable.id] ?? 'libre') === 'sucia' && (
+              <button
+                type="button"
+                onClick={() => void handleSetStatus('libre')}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-button text-slate-700 transition-transform active:scale-95 hover:bg-slate-50"
+              >
+                <span className="material-symbols-outlined">cleaning_services</span>
+                Ya está limpia, liberar
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setDialog('estado')}
+              className="w-full rounded-lg px-4 py-2 text-sm font-semibold text-secondary hover:bg-surface-container-high"
+            >
+              Cambiar estado a mano
+            </button>
+          </div>
+        )}
+
+        {dialog === 'abrir' && selectedTable && (
+          <OpenTableDialog
+            table={selectedTable}
+            initialGuests={selectedOrder?.guests}
+            onSubmit={handleOpenTable}
+            onCancel={() => setDialog('acciones')}
+          />
+        )}
+
+        {dialog === 'estado' && selectedTable && (
+          <div className="w-full space-y-4 rounded-2xl border border-surface-variant bg-surface-container-lowest p-6 shadow-[0px_12px_32px_rgba(0,0,0,0.08)]">
+            <div>
+              <h2 className="text-headline-md text-on-surface">{selectedTable.name}</h2>
               <p className="text-sm text-secondary">
-                {statusTable.capacity} comensales · ¿A qué estado pasa?
+                {selectedTable.capacity} comensales · ¿A qué estado pasa?
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {TABLE_STATUSES.map((status) => {
                 const meta = STATUS_META[status]
-                const current = (states[statusTable.id] ?? 'libre') === status
+                const current = (states[selectedTable.id] ?? 'libre') === status
                 return (
                   <button
                     key={status}
